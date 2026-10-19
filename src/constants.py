@@ -4,7 +4,7 @@ import pathlib
 WORK_DIR = pathlib.Path(__file__).resolve().parent
 WORK_DIR.mkdir(parents=True, exist_ok=True)
 
-DATA_DIR = WORK_DIR / "data"
+DATA_DIR = WORK_DIR.parent / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 HEADERS = {

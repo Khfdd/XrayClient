@@ -89,6 +89,9 @@ class Subscription:
             response.raise_for_status()
             self.config = response.json()
             self.url_etag = response.headers.get("Etag")
+            new_user_agent = response.headers.get("change-user-agent")
+            if new_user_agent:
+                self.headers["User-Agent"] = new_user_agent
             self.fallback_url = response.headers.get("fallback-url")
             routing = response.headers.get("routing")
             if routing and routing.startswith(

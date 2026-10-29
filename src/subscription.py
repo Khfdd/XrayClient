@@ -1,4 +1,5 @@
 import dataclasses
+from venv import logger
 import requests
 import typing
 import base64
@@ -15,6 +16,7 @@ class Subscription:
     last_updated: float = dataclasses.field(compare=False)
     name: str = dataclasses.field(compare=True)
     url: str = dataclasses.field(compare=False)
+    fallback_url: str | None = dataclasses.field(compare=False)
     headers: dict[str, str] = dataclasses.field(compare=False)
     config: list[dict[str, typing.Any]] = dataclasses.field(compare=False)
     geoip: bytes | None = dataclasses.field(compare=False)
@@ -74,6 +76,7 @@ class Subscription:
             response.raise_for_status()
             self.config = response.json()
             self.url_etag = response.headers.get("Etag")
+            self.fallback_url = response.headers.get("fallback-url")
             routing = response.headers.get("routing")
             if routing and routing.startswith(
                 "happ://"
@@ -118,6 +121,7 @@ class Subscription:
             last_updated=0,
             name="N/A",
             url=url,
+            fallback_url=None,
             headers=headers,
             config=[],
             geoip=None,
@@ -182,9 +186,14 @@ class SubscriptionManager:
         return [i.url for i in self.subs]
 
     def __enter__(self):
-        if self._data_file.exists():
-            self.__subs = pickle.loads(self._data_file.read_bytes())
-        elif self._backup_file.exists():
+        try:
+            if self._data_file.exists():
+                self.__subs = pickle.loads(self._data_file.read_bytes())
+                return self
+        except Exception as e:
+            logger.warning("Failed to load data. Err: %s", e)
+        if self._backup_file.exists():
+            logger.info("Try load from backup.")
             for url in json.loads(self._backup_file.read_bytes()):
                 print(f"⬇️ Download data for {url}")
                 self.add_sub(url=url)

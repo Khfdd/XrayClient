@@ -10,6 +10,7 @@ import datetime
 class Flags(enum.Enum):
     ADD_SUB = "➕ Добавить подписку"
     UPDATE_SUB = "🔄 Обновить подписку"
+    DELETE_SUB = "❌ Удалить подписку"
     BACK_ACTION = "🔙 Назад"
 
 
@@ -48,14 +49,17 @@ def main():
                     "Выберите конфиг:",
                     choices=[
                         questionary.Choice(
-                            title=Flags.UPDATE_SUB.value, value=Flags.UPDATE_SUB),
-
-                        questionary.Choice(
-                            title=Flags.BACK_ACTION.value, value=Flags.BACK_ACTION)
+                            title=Flags.UPDATE_SUB.value, value=Flags.UPDATE_SUB)
                     ]+[
                         questionary.Choice(
-                            title=f'{config.get("remarks", "N/A")} [{sum(1 for i in config.get("outbounds", []) if i.get("protocol") not in ["freedom", "blackhole"])}]', value=config)
+                            title=f'{config.get("remarks", "N/A")} [{sum(1 for i in config.get("outbounds", []) if i.get("protocol") not in ["freedom", "blackhole"])}] — {config.get("meta", {}).get("serverDescription", "N/A")}', value=config)
                         for config in sub.config
+                    ] + [
+
+                        questionary.Choice(
+                            title=Flags.DELETE_SUB.value, value=Flags.DELETE_SUB),
+                        questionary.Choice(
+                            title=Flags.BACK_ACTION.value, value=Flags.BACK_ACTION)
                     ],
                 ).ask()
 
@@ -63,6 +67,11 @@ def main():
                     sub.update()
                 elif config == Flags.BACK_ACTION:
                     continue
+                elif config == Flags.DELETE_SUB:
+                    if input(f'Введите "DELETE", чтобы удалить {sub.name}: ') == "DELETE":
+                        sub_manager.del_sub(sub)
+                        print(
+                            f"Подписка {sub.name} была удалена. Ее url был: {sub.url}")
                 elif isinstance(config, dict):
                     config["inbounds"] = constants.INBOUNDS
                     with open(constants.XRAY_CONFIG_FILE, "w", encoding="utf8") as file:

@@ -48,45 +48,64 @@ class Subscription:
     def update(
         self
     ):
-        response = self.get(
-            url=self.url,
-            etag=self.url_etag,
-            headers=self.headers
-        )
-        response.raise_for_status()
-        self.config = response.json()
-        self.url_etag = response.headers.get("Etag")
-        routing = response.headers.get("routing")
-        if routing and routing.startswith(
-            "happ://"
-        ):
-            routing_base64_encoded = routing.removeprefix(
-                "happ://routing/add/").removeprefix("happ://routing/onadd/")
-            routing_json: dict[str, str] = json.loads(
-                base64.b64decode(routing_base64_encoded))
-            geoip_url = routing_json.get("Geoipurl")
-            geosite_url = routing_json.get("Geositeurl")
-            if geoip_url:
-                geoip_response = self.get(
-                    url=geoip_url,
-                    etag=self.geoip_etag
-                )
-                self.geoip = geoip_response.content
-                self.geoip_etag = geoip_response.headers.get("ETag")
-            if geosite_url:
-                geosite_response = self.get(
-                    url=geosite_url,
-                    etag=self.geosite_etag
-                )
-                self.geosite = geosite_response.content
-                self.geosite_etag = geosite_response.headers.get("ETag")
+        if self.url.startswith("file://"):
+            filepath = pathlib.Path(self.url.removeprefix("file://"))
+            if not filepath.exists():
+                raise ValueError(f"{self.url} don't exist.")
+            elif not filepath.is_file():
+                raise ValueError(f"{self.url} is not file")
+            filedata: str | list[dict[str, typing.Any]] | dict[str,
+                                                               typing.Any] = json.loads(filepath.read_bytes())
 
-        self.name = response.headers.get("profile-title", self.url)
-        try:
-            self.name = base64.b64decode(
-                self.name.removeprefix("base64:")).decode()
-        except:
-            pass
+            if isinstance(filedata, dict):
+                filedata = [filedata]
+            if not isinstance(filedata, list):
+                raise ValueError(f"Incorrect data format: {filedata}")
+
+            self.name = f"🛠️ {filepath.name.removesuffix(".json")}"
+            self.config = filedata
+
+        else:
+            response = self.get(
+                url=self.url,
+                etag=self.url_etag,
+                headers=self.headers
+            )
+            response.raise_for_status()
+            self.config = response.json()
+            self.url_etag = response.headers.get("Etag")
+            routing = response.headers.get("routing")
+            if routing and routing.startswith(
+                "happ://"
+            ):
+                routing_base64_encoded = routing.removeprefix(
+                    "happ://routing/add/").removeprefix("happ://routing/onadd/")
+                routing_json: dict[str, str] = json.loads(
+                    base64.b64decode(routing_base64_encoded))
+                geoip_url = routing_json.get("Geoipurl")
+                geosite_url = routing_json.get("Geositeurl")
+                if geoip_url:
+                    geoip_response = self.get(
+                        url=geoip_url,
+                        etag=self.geoip_etag
+                    )
+                    self.geoip = geoip_response.content
+                    self.geoip_etag = geoip_response.headers.get("ETag")
+                if geosite_url:
+                    geosite_response = self.get(
+                        url=geosite_url,
+                        etag=self.geosite_etag
+                    )
+                    self.geosite = geosite_response.content
+                    self.geosite_etag = geosite_response.headers.get("ETag")
+
+            self.name = response.headers.get("profile-title", self.url)
+            try:
+                self.name = base64.b64decode(
+                    self.name.removeprefix("base64:")).decode()
+            except:
+                pass
+
         self.last_updated = datetime.datetime.now(datetime.UTC).timestamp()
 
     @classmethod
@@ -146,6 +165,12 @@ class SubscriptionManager:
         )
         return sub
 
+    def del_sub(
+        self,
+        sub: Subscription
+    ):
+        self.__subs.discard(sub)
+
     @property
     def subs(
         self
@@ -161,6 +186,7 @@ class SubscriptionManager:
             self.__subs = pickle.loads(self._data_file.read_bytes())
         elif self._backup_file.exists():
             for url in json.loads(self._backup_file.read_bytes()):
+                print(f"⬇️ Download data for {url}")
                 self.add_sub(url=url)
         return self
 

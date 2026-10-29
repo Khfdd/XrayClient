@@ -68,11 +68,24 @@ class Subscription:
             self.config = filedata
 
         else:
-            response = self.get(
-                url=self.url,
-                etag=self.url_etag,
-                headers=self.headers
-            )
+            try:
+                response = self.get(
+                    url=self.url,
+                    etag=self.url_etag,
+                    headers=self.headers
+                )
+            except Exception as e:
+                if self.fallback_url:
+                    logger.info(
+                        'Try load from fallback url.'
+                    )
+                    response = self.get(
+                        url=self.fallback_url,
+                        etag=self.url_etag,
+                        headers=self.headers
+                    )
+                else:
+                    raise e
             response.raise_for_status()
             self.config = response.json()
             self.url_etag = response.headers.get("Etag")

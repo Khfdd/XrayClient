@@ -9,6 +9,7 @@ import datetime
 
 class Flags(enum.Enum):
     ADD_SUB = "➕ Добавить подписку"
+    ABOUT_SUB = "ℹ️ Техническая информация"
     UPDATE_SUB = "🔄 Обновить подписку"
     DELETE_SUB = "❌ Удалить подписку"
     BACK_ACTION = "🔙 Назад"
@@ -56,6 +57,9 @@ def main():
                         for config in sub.config
                     ] + [
 
+
+                        questionary.Choice(
+                            title=Flags.ABOUT_SUB.value, value=Flags.ABOUT_SUB),
                         questionary.Choice(
                             title=Flags.DELETE_SUB.value, value=Flags.DELETE_SUB),
                         questionary.Choice(
@@ -72,6 +76,8 @@ def main():
                         sub_manager.del_sub(sub)
                         print(
                             f"Подписка {sub.name} была удалена. Ее url был: {sub.url}")
+                elif config == Flags.ABOUT_SUB:
+                    sub.show()
                 elif isinstance(config, dict):
                     config["inbounds"] = constants.INBOUNDS
                     with open(constants.XRAY_CONFIG_FILE, "w", encoding="utf8") as file:

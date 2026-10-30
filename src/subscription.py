@@ -18,6 +18,7 @@ class Subscription:
     url: str = dataclasses.field(compare=False)
     fallback_url: str | None = dataclasses.field(compare=False)
     headers: dict[str, str] = dataclasses.field(compare=False)
+    response_headers: dict[str, str] | None = dataclasses.field(compare=False)
     config: list[dict[str, typing.Any]] = dataclasses.field(compare=False)
     geoip: bytes | None = dataclasses.field(compare=False)
     geosite: bytes | None = dataclasses.field(compare=False)
@@ -88,6 +89,7 @@ class Subscription:
                     raise e
             response.raise_for_status()
             self.config = response.json()
+            self.response_headers = dict(response.headers)
             self.url_etag = response.headers.get("Etag")
             new_user_agent = response.headers.get("change-user-agent")
             if new_user_agent:
@@ -139,6 +141,7 @@ class Subscription:
             url=url,
             fallback_url=None,
             headers=headers,
+            response_headers=None,
             config=[],
             geoip=None,
             geosite=None,
@@ -151,13 +154,33 @@ class Subscription:
 
         return sub
 
+    @staticmethod
+    def __format_size(count_of_bytes: int) -> str:
+        if count_of_bytes < 1024:
+            return f"{count_of_bytes} B"
+        if count_of_bytes < 1024 ** 2:
+            return f"{count_of_bytes / 1024:.2f} KB"
+        return f"{count_of_bytes / 1024 ** 2:.2f} MB"
+
     def show(self):
         print(f"Название: {self.name}")
         print(f"URL: {self.url} | {self.url_etag}")
         if self.geoip:
-            print(f"geoip: {len(self.geoip)} B | {self.geoip_etag}")
+            print(
+                f"geoip: {self.__format_size(len(self.geoip))} | {self.geoip_etag}")
+        else:
+            print(
+                "geoip: Not found."
+            )
         if self.geosite:
-            print(f"geosite: {len(self.geosite)} B | {self.geosite_etag}")
+            print(
+                f"geosite: {self.__format_size(len(self.geosite))} | {self.geosite_etag}")
+        else:
+            print(
+                "geosite: Not found."
+            )
+        print(f"Fallback url: {self.fallback_url or "Not found."}")
+        print(f"Response headers: {self.response_headers or "Empty."}")
 
 
 class SubscriptionManager:

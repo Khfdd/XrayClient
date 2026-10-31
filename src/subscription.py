@@ -1,5 +1,4 @@
 import dataclasses
-from venv import logger
 import requests
 import typing
 import base64
@@ -79,7 +78,7 @@ class Subscription:
                 )
             except Exception as e:
                 if self.fallback_url:
-                    logger.info(
+                    print(
                         'Try load from fallback url.'
                     )
                     response = self.get(
@@ -235,9 +234,9 @@ class SubscriptionManager:
                         raise ValueError("Outdated configs loads. Update all.")
                 return self
         except Exception as e:
-            logger.warning("Failed to load data. Err: %s", e)
+            print("Failed to load data. Err: %s", e)
         if self._backup_file.exists():
-            logger.info("Try load from backup.")
+            print("Try load from backup.")
             for url in json.loads(self._backup_file.read_bytes()):
                 print(f"⬇️ Download data for {url}")
                 self.add_sub(url=url)

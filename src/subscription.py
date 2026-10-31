@@ -27,6 +27,8 @@ class Subscription:
     geoip_etag: str | None = dataclasses.field(compare=False)
     geosite_etag: str | None = dataclasses.field(compare=False)
 
+    VERSION: typing.ClassVar[int] = 3
+
     def __hash__(self) -> int:
         return hash(self.url)
 
@@ -228,6 +230,9 @@ class SubscriptionManager:
         try:
             if self._data_file.exists():
                 self.__subs = pickle.loads(self._data_file.read_bytes())
+                for sub in self.__subs:
+                    if getattr(sub, "VERSION") != Subscription.VERSION:
+                        raise ValueError("Outdated configs loads. Update all.")
                 return self
         except Exception as e:
             logger.warning("Failed to load data. Err: %s", e)

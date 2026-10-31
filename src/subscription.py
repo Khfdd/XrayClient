@@ -229,9 +229,8 @@ class SubscriptionManager:
         try:
             if self._data_file.exists():
                 self.__subs = pickle.loads(self._data_file.read_bytes())
-                for sub in self.__subs:
-                    if getattr(sub, "VERSION") != Subscription.VERSION:
-                        raise ValueError("Outdated configs loads. Update all.")
+                if getattr(next(iter(self.__subs), None), "VERSION") != Subscription.VERSION:
+                    raise ValueError("Outdated configs loads. Update all.")
                 return self
         except Exception as e:
             print("Failed to load data. Err: %s", e)

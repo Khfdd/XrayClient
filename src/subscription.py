@@ -44,10 +44,12 @@ class Subscription:
                 headers = {
                     "If-None-Match": etag
                 }
-        return requests.get(
+        response = requests.get(
             url,
             headers=headers
         )
+        response.raise_for_status()
+        return response
 
     def update(
         self
@@ -76,6 +78,7 @@ class Subscription:
                     etag=self.url_etag,
                     headers=self.headers
                 )
+
             except Exception as e:
                 if self.fallback_url:
                     print(
@@ -88,7 +91,6 @@ class Subscription:
                     )
                 else:
                     raise e
-            response.raise_for_status()
             self.config = response.json()
             self.response_headers = dict(response.headers)
             self.url_etag = response.headers.get("Etag")

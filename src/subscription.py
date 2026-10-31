@@ -181,7 +181,10 @@ class Subscription:
                 "geosite: Not found."
             )
         print(f"Fallback url: {self.fallback_url or "Not found."}")
-        print(f"Response headers: {self.response_headers or "Empty."}")
+        if self.response_headers:
+            print(f"Response headers:")
+            for key, value in self.response_headers.items():
+                print(f"    - {key}: {value}")
 
 
 class SubscriptionManager:

@@ -8,9 +8,11 @@ import datetime
 
 
 class Flags(enum.Enum):
+
     ADD_SUB = "➕ Добавить подписку"
     ABOUT_SUB = "ℹ️ Техническая информация"
     UPDATE_SUB = "🔄 Обновить подписку"
+    RELOAD_ALL_SUBS = "🔄 Обновить все [Full]"
     DELETE_SUB = "❌ Удалить подписку"
     BACK_ACTION = "🔙 Назад"
 
@@ -26,6 +28,9 @@ def main():
                 ] + [
                     questionary.Choice(
                         title=Flags.ADD_SUB.value, value=Flags.ADD_SUB),
+
+                    questionary.Choice(
+                        title=Flags.RELOAD_ALL_SUBS.value, value=Flags.RELOAD_ALL_SUBS),
                     questionary.Choice(
                         title=Flags.BACK_ACTION.value, value=Flags.BACK_ACTION)
                 ]
@@ -37,6 +42,9 @@ def main():
             elif sub == Flags.BACK_ACTION:
                 print("Вы вышли из программы.")
                 break
+            elif sub == Flags.RELOAD_ALL_SUBS:
+                sub_manager.reload_all()
+                continue
             elif isinstance(sub, subscription.Subscription):
                 if sub.last_updated:
                     time_delta = datetime.datetime.now(

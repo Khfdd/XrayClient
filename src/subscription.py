@@ -248,6 +248,18 @@ class SubscriptionManager:
     def urls(self):
         return [i.url for i in self.subs]
 
+    def reload_all(
+        self
+    ):
+        print("Try reloading.")
+        if self._backup_file.exists():
+            print("Try load from backup.")
+            for url in json.loads(self._backup_file.read_bytes()):
+                print(f"⬇️ Download data for {url}")
+                self.add_sub(url=url)
+        else:
+            print("Backup needed for this.")
+
     def __enter__(self):
         try:
             if self._data_file.exists():
@@ -257,11 +269,7 @@ class SubscriptionManager:
                 return self
         except Exception as e:
             print("Failed to load data. Err: %s", e)
-        if self._backup_file.exists():
-            print("Try load from backup.")
-            for url in json.loads(self._backup_file.read_bytes()):
-                print(f"⬇️ Download data for {url}")
-                self.add_sub(url=url)
+        self.reload_all()
         return self
 
     def __exit__(self, *_) -> None:

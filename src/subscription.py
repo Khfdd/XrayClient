@@ -8,6 +8,15 @@ import pickle
 import datetime
 
 
+class NotModified:
+    def __init__(self, url: str, etag: str | None = None):
+        self.url = url
+        self.etag = etag
+
+    def __repr__(self) -> str:
+        return f"NotModified(url={self.url!r}, etag={self.etag!r})"
+
+
 @dataclasses.dataclass(
     order=True
 )
@@ -49,6 +58,9 @@ class Subscription:
             headers=headers
         )
         response.raise_for_status()
+
+        if response.status_code == 304:
+            return NotModified(url=url, etag=etag)
         return response
 
     def update(
@@ -91,6 +103,8 @@ class Subscription:
                     )
                 else:
                     raise e
+            if isinstance(response, NotModified):
+                return
             self.config = response.json()
             self.response_headers = dict(response.headers)
             self.url_etag = response.headers.get("Etag")
@@ -113,15 +127,19 @@ class Subscription:
                         url=geoip_url,
                         etag=self.geoip_etag
                     )
-                    self.geoip = geoip_response.content
-                    self.geoip_etag = geoip_response.headers.get("ETag")
+                    if not isinstance(geoip_response, NotModified):
+                        self.geoip = geoip_response.content
+                        self.geoip_etag = geoip_response.headers.get("ETag")
                 if geosite_url:
                     geosite_response = self.get(
                         url=geosite_url,
                         etag=self.geosite_etag
                     )
-                    self.geosite = geosite_response.content
-                    self.geosite_etag = geosite_response.headers.get("ETag")
+
+                    if not isinstance(geosite_response, NotModified):
+                        self.geosite = geosite_response.content
+                        self.geosite_etag = geosite_response.headers.get(
+                            "ETag")
 
             self.name = response.headers.get("profile-title", self.url)
             try:
